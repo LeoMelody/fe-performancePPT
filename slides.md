@@ -207,7 +207,7 @@ IndexedDB(NoSQL 存储一些数据)
 ---
 transition: slide-up
 layout: image-right
-image: /img_6.png
+image: https://source.unsplash.com/collection/94734566/1920x1080
 ---
 
 # 分治的思维
@@ -393,7 +393,7 @@ babel-loader作用于编译阶段，而babel-polyfill作用于运行阶段
 <div>
 那具体有什么区别呢？
 </div>
-简单说： 编译阶段用户是不参与的，但是运行阶段用户会参与进来。就像是webpack的compiler-error和我们系统在使用过程中出现的xxx is not defined的区别
+用一个独特的角度来解释： 编译阶段用户是不参与的，但是运行阶段用户会参与进来。就像是webpack的compiler-error和我们系统在使用过程中出现的xxx is not defined的区别
 </div>
 
 <br>
