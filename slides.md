@@ -328,9 +328,7 @@ transition: slide-up
 ---
 
 # 图示
-
-![img_7.png](img_7.png)
-
+<img src="/img_7.png">
 这里其实是很基础的一个宏任务和微任务的概念
 
 但是实际开发中往往不是这样的简单的例子，一般情况下可能是这样的：
@@ -345,7 +343,8 @@ transition: slide-up
 
 # 我们看到的和实际去计算的是不是成正比
 这个绿色的部分只是冰山一角
-![img_8.png](img_8.png)
+<img src="/img_8.png">
+
 
 
 ---
@@ -462,8 +461,8 @@ chainWebpack: (config) => {
 
 ::right::
 
-![img_9.png](img_9.png)
-![img_10.png](img_10.png)
+<img src="/img_9.png">
+<img src="/img_10.png">
 
 ---
 transition: slide-up
@@ -535,11 +534,9 @@ transition: slide-up
 transition: slide-up
 layout: two-cols
 ---
-![img_13.png](img_13.png)
-
+<img src="/img_13.png">
 ::right::
-![img_14.png](img_14.png)
-
+<img src="/img_14.png">
 
 ---
 transition: slide-up
