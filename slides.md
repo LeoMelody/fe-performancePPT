@@ -38,10 +38,10 @@ transition: fade-out
 
 - 🛠 **性能优化方法**
   - 💻 网络及缓存
-  - 🪚 分治的思维
+  - 🪚 拆分的意义
   - 🐸 编译时与运行时
 - 🎞 **工具及指标**
-  - 监控及监控的意义
+  - 监控
   - 常见的性能指标
 - 🪡 **一些与性能密切相关的事情**
   - 好的代码组织会带来更好的性能
@@ -65,7 +65,7 @@ image: https://source.unsplash.com/collection/94734566/1920x1080
 <br>
 
 - 💻 网络及缓存
-- 🪚 分治的思维
+- 🪚 拆分的意义
 - 🐸 编译时与运行时
 
 ---
@@ -90,7 +90,8 @@ transition: slide-left
 </style>
 
 在浏览器输入URL发生了什么？ (<span style="font-size: 12px">这里不对这个问题进行展开，只做一些抽象的描述，感兴趣的同学可以自行查阅</span>)
-
+<br>
+一个高度抽象的模型：
 <div class="container">
   <img src="/img.png" width="400" height="50" v-click="1"/> 
 
@@ -190,7 +191,7 @@ ServiceWorker的核心，通过对特定请求的拦截代理，可以实现缓�
 CacheAPI(K,V 适合存储req: res)
 IndexedDB(NoSQL 存储一些数据)
 <div style="height: 30px"></div>
-<h5>资源请求的缓存策略</h5>
+<h5 style="color: #ff4f4f;">资源请求的缓存策略</h5>
 
 <ul>
   <li>Cache Only</li>
@@ -206,11 +207,92 @@ IndexedDB(NoSQL 存储一些数据)
 
 ---
 transition: slide-up
+---
+# 网络及缓存 —— 弱网和无网络情况下的一些优化
+
+<img src="/img_15.png">
+
+---
+transition: slide-up
+---
+# 网络及缓存 —— 弱网和无网络情况下的一些优化
+
+<img src="/img_16.png">
+
+---
+transition: slide-up
+layout: two-cols
+---
+
+```ts {all} {maxHeight:'500px'}
+function networkFirst ({
+  fetchOptions,
+  cacheName = 'runtime-cache',
+  matchOptions
+} = {}) {
+  // ...（定义getCachedResponse、fetchAndCatch）
+
+  return async request => {
+    let response
+
+    try {
+      // 优先发起网络请求，并将请求返回结果缓存到本地
+      response = await fetchAndCatch(request)
+    } catch (e) {}
+
+    if (response == null) {
+      // 网络资源请求失败时，从本地缓存中读取缓存
+      response = await getCachedResponse(request)
+    }
+    
+    // 网络请求超时
+    setTimeout(() => {
+        // ... 网络请求超时处理
+    }, timeout)
+    
+
+    return response
+  }
+}
+
+```
+::right::
+```ts {all} {maxHeight:'500px'}
+function staleWhileRevalidate ({
+  fetchOptions,
+  cacheName = 'runtime-cache',
+  matchOptions
+} = {}) {
+  // ...（定义 getCachedResponse、fetchAndCatch）
+  return async request => {
+    let response
+    // 首先读取本地缓存
+    try {
+      response = await getCachedResponse(request)
+    } catch (e) {}
+    // 发起网络请求并更新缓存
+    let fetchPromise = fetchAndCatch(request)
+    // 如果存在本地缓存，则静默更新缓存即可，无需阻塞函数执行
+    if (response) {
+      // 静默更新，无需报错
+      fetchPromise.catch(e => {})
+    } else {
+      // 反之则将网络请求到的资源返回
+      response = await fetchPromise
+    }
+    return response
+  }
+}
+```
+
+
+---
+transition: slide-up
 layout: image-right
 image: https://source.unsplash.com/collection/94734566/1920x1080
 ---
 
-# 分治的思维
+# 拆分的意义
 
 <div v-click="1">
   <ul>
@@ -357,7 +439,7 @@ transition: slide-up
 
 <div v-click>
   <div>babel-loader 用于做代码的转换，ES6/7/8/9 => ES5</div>
-  <div>babel-polyfill 用于做代码的补齐(patch)，BlobAPI 没有 arrayBuffer() 这个方法，就需要自己写个补丁方法</div>
+  <div>babel-polyfill 用于做代码的补齐(patch)，例如19年前浏览器中 BlobAPI 没有 arrayBuffer() 这个方法，就需要自己写个补丁方法来支持</div>
 ```js
 (function () {
   File.prototype.arrayBuffer = File.prototype.arrayBuffer || myArrayBuffer;
@@ -382,7 +464,7 @@ transition: slide-up
 ---
 
 # 编译时与运行时
-第二个问题： 这俩为什么不能合到一起？
+第二个问题： babel-loader和babel-polyfill这俩为什么不合到一起？
 
 <div v-click>
 babel-loader作用于编译阶段，而babel-polyfill作用于运行阶段
@@ -401,7 +483,7 @@ babel-loader作用于编译阶段，而babel-polyfill作用于运行阶段
 <div>
 一些思考？
 </div>
-是否可以让更多的功能在编译阶段完成？
+如果代码可以提前编译是不是就是优于在运行时中执行？是否可以让更多的功能在编译阶段完成？有哪些例子？
 </div>
 
 
@@ -466,10 +548,35 @@ chainWebpack: (config) => {
 
 ---
 transition: slide-up
+---
+
+# 处理逻辑
+```ts
+import * as compiler from '@vue/compiler-sfc';
+import * as webpack from 'webpack';
+import { TransformerFactory } from '@/transforms/transformer';
+
+export default function (this: webpack.LoaderContext<any>, code: string): string {
+	const { descriptor } = compiler.parse(code);
+	const transformer = TransformerFactory.getTransformer(descriptor);
+	return transformer.transform();
+}
+
+```
+
+这个项目是基于vite搭建的。而且vite这个是很好去加东西的，最初的eslint，prettier，vitest 这些都没用它的脚手架装，后面再去补充的时候也很easy。
+<br>
+然后推荐下vitest这个东西，确实够快，不好的地方就是我感觉还是没jest功能那么多，暂时也没它生态好
+
+<img src="/img_17.png">
+
+
+---
+transition: slide-up
 layout: two-cols
 ---
 
-# 监控及监控的意义
+# 监控
 ### WHY
 我们要了解目前系统的运行情况
 ### WHAT
@@ -479,6 +586,9 @@ layout: two-cols
 - 要有基本的性能指标
 - 报警及对应阈值的定义
 - 对应的问题处理
+
+
+感兴趣的可以了解下 Prometheus和Sentry
 
 ::right::
 
@@ -513,7 +623,7 @@ transition: slide-up
 
 <br>
 
-<div v-click>
+<div v-click="1">
 <ul>
   <li>
     新增的业务逻辑或者可以删除的业务逻辑都非常好下手，不至于写很多补丁代码。往往我们因为业务逻辑的不清晰会去做成倍的无用判断逻辑
@@ -527,6 +637,10 @@ transition: slide-up
     前人种树后人乘凉 而不是 前人欠债后人还钱
   </li>
 </ul>
+
+<br>
+
+<div v-click="2" style="color: #ef784b">我们是否要尽快去熟悉掌握和使用compositionAPI？</div>
 
 </div>
 
@@ -602,6 +716,8 @@ const { x, y } = useMouse();
 
 **在小的代码片段中使用ref等compositionAPI直接就能构造出响应式的数据结果**
 
+**在Vue2中怎么去实现这样的一个小功能？**
+
 ---
 transition: slide-up
 layout: two-cols
@@ -675,3 +791,6 @@ transition: slide-up
 - Google ChromeDevtools 文档  https://developer.chrome.com/docs/devtools/
 - 在浏览器输入URL发生了什么 我认为非常好且全面的答案 https://zhuanlan.zhihu.com/p/133906695
 - 百度出品的PWA实战 https://lavas-project.github.io/pwa-book/
+- Guillaume Chau(Vue 核心成员) 整理的Vue组件优化的九个方案 https://slides.com/akryum/vueconfus-2019
+- 我总结的关于宏任务和微任务的一些关系 https://nebulous-twilight-f4e.notion.site/ce4b4f49b71f450bb622a473e4301dcf
+

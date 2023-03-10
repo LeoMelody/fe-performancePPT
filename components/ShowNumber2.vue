@@ -1,6 +1,7 @@
 <template>
   <div class="main">
     <button @click="heavyIncrease">click</button>
+    <button @click="reset" style="margin-left: 20px;">rest</button>
     <div style="color: #e33131">{{number1}}</div>
     <div style="color: #f5d743">{{number2}}</div>
     <div style="color: #41f85f">{{number3}}</div>
@@ -16,6 +17,13 @@ const number1 = ref(0);
 const number2 = ref(0);
 const number3 = ref(0);
 const number4 = ref(0);
+
+const reset = () => {
+  number1.value = 0;
+  number2.value = 0;
+  number3.value = 0;
+  number4.value = 0;
+}
 
 let i = 0;
 const increase = () => {
